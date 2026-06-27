@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="theme-color" content="#0f172a" />
+<meta name="apple-mobile-web-app-title" content="Upper Body" />
+<title>Upper Body — Dumbbell &amp; Bench</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="apple-touch-icon" href="icon-180.png" />
+<link rel="icon" href="icon-192.png" />
+<style>
+  :root{
+    --bg:#0f172a; --bg2:#0b1220; --card:#1e293b; --card2:#233044;
+    --text:#e2e8f0; --muted:#94a3b8; --line:#334155;
+    --accent:#34d399; --accent2:#22d3ee; --warn:#fbbf24;
+    --body:#cbd5e1; --bench:#475569; --bench2:#3a475a; --bar:#94a3b8; --plate:#34d399; --floor:#475569;
+    --done:#34d399;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    background:linear-gradient(180deg,var(--bg) 0%,var(--bg2) 100%);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.5; padding:0 0 calc(40px + env(safe-area-inset-bottom));
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:780px;margin:0 auto;padding:0 16px}
+  header{padding:calc(18px + env(safe-area-inset-top)) 0 8px}
+  h1{font-size:20px;margin:0;letter-spacing:.2px}
+  h1 .ic{color:var(--accent)}
+  .sub{color:var(--muted);font-size:13px;margin-top:2px}
+
+  .today{
+    margin-top:14px;background:linear-gradient(135deg,var(--card) 0%,var(--card2) 100%);
+    border:1px solid var(--line);border-radius:16px;padding:16px;
+  }
+  .today .lbl{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent)}
+  .today .name{font-size:22px;font-weight:700;margin-top:2px}
+  .today .meta{color:var(--muted);font-size:13px;margin-top:4px}
+  .bar{height:8px;background:#0b1220;border-radius:99px;margin-top:12px;overflow:hidden}
+  .bar > i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0;transition:width .3s ease}
+  .barlbl{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:6px}
+  .reset{background:none;border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer}
+  .reset:active{background:var(--card2)}
+
+  .week{display:flex;gap:6px;margin-top:16px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+  .day{
+    flex:1 0 auto;min-width:44px;text-align:center;background:var(--card);border:1px solid var(--line);
+    border-radius:12px;padding:8px 4px;cursor:pointer;position:relative;transition:.15s;
+  }
+  .day:active{transform:scale(.96)}
+  .day.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+  .day.today .dn{color:var(--accent)}
+  .day .dn{font-size:12px;font-weight:700}
+  .day .dt{font-size:10px;color:var(--muted);margin-top:2px;height:13px}
+  .day .dot{width:6px;height:6px;border-radius:99px;background:var(--accent2);margin:4px auto 0}
+  .day .dot.rest{background:var(--line)}
+  .day .chk{position:absolute;top:3px;right:5px;font-size:11px;color:var(--done)}
+
+  .sectitle{display:flex;align-items:baseline;gap:8px;margin:22px 2px 8px}
+  .sectitle h2{font-size:17px;margin:0}
+  .sectitle .tag{font-size:12px;color:var(--muted)}
+
+  .warm{
+    background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);color:#fde68a;
+    border-radius:12px;padding:10px 12px;font-size:13px;margin-bottom:12px;
+  }
+  .warm b{color:var(--warn)}
+
+  .rest-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:28px 16px;text-align:center}
+  .rest-card .em{font-size:34px}
+  .rest-card .t{font-weight:700;font-size:18px;margin-top:6px}
+  .rest-card .d{color:var(--muted);font-size:14px;margin-top:4px}
+
+  .ex{background:var(--card);border:1px solid var(--line);border-radius:16px;margin-bottom:14px;overflow:hidden}
+  .ex .top{display:flex;gap:12px;padding:14px 14px 6px}
+  .exsvg{width:120px;height:84px;flex:0 0 auto;background:#0b1220;border-radius:10px;border:1px solid var(--line)}
+  .ex .info{flex:1;min-width:0}
+  .ex .nm{font-weight:700;font-size:16px}
+  .ex .badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+  .badge{font-size:11px;border:1px solid var(--line);background:var(--bg2);color:var(--muted);border-radius:99px;padding:2px 8px}
+  .badge.tgt{color:var(--accent);border-color:rgba(52,211,153,.4)}
+  .badge.sr{color:var(--text)}
+
+  .sets{display:flex;flex-wrap:wrap;gap:8px;padding:6px 14px 12px}
+  .setbtn{
+    width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--bg2);
+    color:var(--muted);font-size:13px;font-weight:700;cursor:pointer;transition:.12s;display:flex;
+    align-items:center;justify-content:center;
+  }
+  .setbtn:active{transform:scale(.92)}
+  .setbtn.on{background:var(--accent);border-color:var(--accent);color:#07120c}
+  .sets .hint{align-self:center;font-size:11px;color:var(--muted);margin-left:2px}
+
+  .guide-toggle{
+    width:100%;text-align:left;background:var(--card2);border:none;border-top:1px solid var(--line);
+    color:var(--text);padding:11px 14px;font-size:13px;font-weight:600;cursor:pointer;display:flex;
+    justify-content:space-between;align-items:center;
+  }
+  .guide-toggle .ar{transition:.2s;color:var(--muted)}
+  .guide-toggle.open .ar{transform:rotate(180deg)}
+  .guide{display:none;padding:6px 14px 16px;border-top:1px solid var(--line);background:var(--bg2)}
+  .guide.open{display:block}
+  .guide .big{width:100%;height:auto;max-height:240px;background:#0b1220;border:1px solid var(--line);border-radius:12px;margin:6px 0 12px}
+  .guide h4{margin:12px 0 6px;font-size:13px;letter-spacing:.4px;text-transform:uppercase;color:var(--accent)}
+  .guide h4.bad{color:var(--warn)}
+  .guide ol,.guide ul{margin:0;padding-left:20px}
+  .guide li{margin-bottom:6px;font-size:14px;color:#dbe4ee}
+  .guide ul li{list-style:none;position:relative;padding-left:4px}
+  .guide ul li::before{content:"✕";position:absolute;left:-18px;color:var(--warn);font-size:12px}
+
+  footer{color:var(--muted);font-size:12px;text-align:center;margin-top:26px;line-height:1.7}
+  footer a{color:var(--accent2)}
+  .pill{display:inline-block;background:var(--card);border:1px solid var(--line);border-radius:99px;padding:3px 10px;margin:3px}
+
+  /* tabs */
+  .tabs{display:flex;gap:8px;margin-top:14px}
+  .tab{flex:1;background:var(--card);border:1px solid var(--line);color:var(--muted);border-radius:12px;padding:11px;font-size:14px;font-weight:700;cursor:pointer}
+  .tab:active{transform:scale(.98)}
+  .tab.on{background:linear-gradient(135deg,var(--card),var(--card2));color:var(--text);border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+
+  /* nutrition */
+  .ncard{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-top:14px}
+  .ncard h3{margin:0 0 4px;font-size:15px}
+  .ncard h3 .muted{font-weight:400}
+  .muted{color:var(--muted);font-size:13px}
+  .tgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+  .tnum{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:10px 4px;text-align:center}
+  .tnum .v{font-size:19px;font-weight:800}
+  .tnum .l{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:3px}
+  .tnum.carb{border-color:rgba(52,211,153,.5);background:rgba(52,211,153,.08)} .tnum.carb .v{color:var(--accent)}
+  .breakdown{font-size:12px;color:var(--muted);margin-top:12px;line-height:1.7}
+  .breakdown b{color:var(--text)}
+
+  .field{display:block;margin-top:10px;font-size:12px;color:var(--muted)}
+  .field input,.field select,.field textarea{width:100%;margin-top:5px;background:var(--bg2);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:11px;font-size:16px;font-family:inherit}
+  .field textarea{min-height:62px;resize:vertical}
+  .field input:focus,.field select,.field textarea:focus{outline:none;border-color:var(--accent)}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .btn{background:var(--accent);color:#07120c;border:none;border-radius:10px;padding:12px 14px;font-size:14px;font-weight:700;cursor:pointer;width:100%;margin-top:12px}
+  .btn:active{transform:scale(.98)}
+  .btn.sec{background:var(--card2);color:var(--text);border:1px solid var(--line)}
+  .btn.ai{background:linear-gradient(135deg,var(--accent2),var(--accent));color:#06121a}
+  .btn:disabled{opacity:.5;cursor:default}
+
+  .pbar{height:9px;background:var(--bg2);border-radius:99px;overflow:hidden;margin-top:5px}
+  .pbar > i{display:block;height:100%;border-radius:99px;transition:width .3s ease}
+  .pwrap{margin-top:12px}
+  .pwrap .top{display:flex;justify-content:space-between;font-size:13px;gap:8px}
+  .pwrap .top .r{color:var(--muted);text-align:right}
+
+  .food{display:flex;gap:10px;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:8px;align-items:flex-start}
+  .food img{width:52px;height:52px;border-radius:8px;object-fit:cover;flex:0 0 auto}
+  .food .ph{width:52px;height:52px;border-radius:8px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:22px;flex:0 0 auto}
+  .food .fb{flex:1;min-width:0}
+  .food .fn{font-weight:700;font-size:14px}
+  .food .fnotes{font-size:12px;color:var(--muted);margin-top:2px;word-break:break-word}
+  .food .fm{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+  .food .del{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0 2px;line-height:1}
+  .chip{font-size:11px;border:1px solid var(--line);border-radius:99px;padding:2px 8px;color:var(--muted)}
+  .chip.k{color:var(--text)} .chip.c{color:var(--accent);border-color:rgba(52,211,153,.4)}
+  .status{font-size:13px;margin-top:8px;min-height:18px;color:var(--muted)}
+  .status.err{color:#fca5a5} .status.ok{color:var(--accent)}
+  .linkbtn{background:none;border:none;color:var(--accent2);font-size:12px;cursor:pointer;text-decoration:underline;padding:0}
+  .warnbox{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);color:#fde68a;border-radius:12px;padding:12px;font-size:12.5px;margin-top:14px;line-height:1.6}
+  .empty{background:var(--card);border:1px dashed var(--line);border-radius:16px;padding:22px 16px;text-align:center;color:var(--muted);margin-top:14px}
+</style>
+</head>
+<body>
+
+<!-- shared SVG marker (arrowhead) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <marker id="ah" markerWidth="9" markerHeight="9" refX="5" refY="4.5" orient="auto">
+      <path d="M0 0 L9 4.5 L0 9 Z" fill="var(--accent)"/>
+    </marker>
+  </defs>
+</svg>
+
+<div class="wrap">
+  <header>
+    <h1><span class="ic">▰</span> Upper Body · Dumbbell &amp; Bench</h1>
+    <div class="sub">A 3-day weekly plan with form guides. Your progress saves on this device.</div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab on" data-view="workout">🏋️ Workout</button>
+    <button class="tab" data-view="nutrition">🍽️ Nutrition</button>
+  </div>
+
+  <div id="view-workout">
+  <div class="today" id="todayCard"></div>
+
+  <div class="week" id="week"></div>
+
+  <div class="sectitle">
+    <h2 id="dayTitle"></h2>
+    <span class="tag" id="dayTag"></span>
+  </div>
+
+  <div id="list"></div>
+  </div><!-- /view-workout -->
+
+  <div id="view-nutrition" style="display:none"></div>
+
+  <footer>
+    <div>Program split &nbsp;·&nbsp;
+      <span class="pill">Mon — Chest &amp; Triceps</span>
+      <span class="pill">Wed — Back &amp; Biceps</span>
+      <span class="pill">Fri — Shoulders &amp; Arms</span>
+    </div>
+    <div style="margin-top:10px">Tip: rest at least one day between sessions. Add weight when you can finish all sets with good form.</div>
+    <div style="margin-top:6px;opacity:.7">Save this file anywhere — open it offline on iPhone or laptop. Not medical advice.</div>
+  </footer>
+</div>
+
+<script>
+/* ----------------------------------------------------------------------
+   INFOGRAPHIC BUILDERS  (simple side-view figures)
+   solid = working position · faded = start · green arrow = movement
+---------------------------------------------------------------------- */
+function db(cx,cy,deg){deg=deg||0;return `<g transform="translate(${cx} ${cy}) rotate(${deg})">
+  <rect x="-15" y="-3.5" width="30" height="7" rx="3.5" fill="var(--bar)"/>
+  <rect x="-19" y="-10" width="9" height="20" rx="3" fill="var(--plate)"/>
+  <rect x="10" y="-10" width="9" height="20" rx="3" fill="var(--plate)"/></g>`;}
+function lb(x1,y1,x2,y2,w){w=w||12;return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--body)" stroke-width="${w}" stroke-linecap="round"/>`;}
+function hd(cx,cy,r){r=r||13;return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="var(--body)"/>`;}
+function gh(s){return `<g opacity="0.26">${s}</g>`;}
+function arr(x1,y1,x2,y2){return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--accent)" stroke-width="3.2" stroke-linecap="round" stroke-dasharray="1 6" marker-end="url(#ah)"/>`;}
+function arc(d){return `<path d="${d}" fill="none" stroke="var(--accent)" stroke-width="3.2" stroke-linecap="round" stroke-dasharray="1 6" marker-end="url(#ah)"/>`;}
+function floor(){return `<line x1="20" y1="190" x2="280" y2="190" stroke="var(--floor)" stroke-width="3"/>`;}
+function flatBench(){return floor()+
+  `<rect x="58" y="120" width="184" height="14" rx="4" fill="var(--bench)"/>
+   <rect x="74" y="134" width="9" height="56" rx="2" fill="var(--bench2)"/>
+   <rect x="217" y="134" width="9" height="56" rx="2" fill="var(--bench2)"/>`;}
+function svg(inner){return `<svg viewBox="0 0 300 210" xmlns="http://www.w3.org/2000/svg" class="exsvg">${inner}</svg>`;}
+
+/* ---- scenes ---- */
+function lying(arms){return svg(flatBench()
+  + lb(168,116,196,150,13) + lb(196,150,210,186,11) + lb(210,186,224,186,8)  // leg
+  + lb(98,114,168,116,17)                                                     // torso
+  + hd(80,108)
+  + arms);}
+
+function incline(arms){return svg(floor()
+  + `<polygon points="118,154 70,98 60,108 108,164" fill="var(--bench)"/>`     // backrest
+  + `<rect x="120" y="150" width="92" height="13" rx="4" fill="var(--bench)"/>` // seat
+  + `<rect x="128" y="163" width="9" height="27" rx="2" fill="var(--bench2)"/>`
+  + `<rect x="196" y="163" width="9" height="27" rx="2" fill="var(--bench2)"/>`
+  + lb(150,150,200,152,13) + lb(200,152,200,188,11)                            // leg
+  + lb(105,118,150,150,17)                                                     // torso along backrest
+  + hd(90,108)
+  + arms);}
+
+function standing(arms){return svg(floor()
+  + lb(150,120,144,155,14) + lb(144,155,148,188,12)
+  + lb(150,74,150,120,18)
+  + hd(150,56)
+  + arms);}
+
+function seated(arms){return svg(floor()
+  + `<rect x="112" y="150" width="86" height="13" rx="4" fill="var(--bench)"/>`
+  + `<polygon points="112,150 106,96 116,96 122,150" fill="var(--bench)"/>`     // backrest
+  + `<rect x="120" y="163" width="9" height="27" rx="2" fill="var(--bench2)"/>`
+  + `<rect x="182" y="163" width="9" height="27" rx="2" fill="var(--bench2)"/>`
+  + lb(150,150,196,150,14) + lb(196,150,196,188,12)                            // thigh+shin
+  + lb(150,98,150,150,17)                                                      // torso
+  + hd(150,80)
+  + arms);}
+
+function bent(arms){return svg(floor()
+  + lb(180,128,190,160,14) + lb(190,160,176,188,12)                           // leg
+  + lb(96,116,180,128,17)                                                      // torso (hinged)
+  + hd(80,110)
+  + arms);}
+
+function benchBrace(arms){return svg(floor()
+  + `<rect x="52" y="120" width="80" height="13" rx="4" fill="var(--bench)"/>`
+  + `<rect x="60" y="133" width="9" height="57" rx="2" fill="var(--bench2)"/>`
+  + `<rect x="116" y="133" width="9" height="57" rx="2" fill="var(--bench2)"/>`
+  + lb(200,122,206,158,14) + lb(206,158,196,188,12)                           // leg
+  + lb(150,108,200,122,17)                                                      // torso
+  + lb(150,108,96,122,11)                                                       // bracing arm to bench
+  + hd(166,102)
+  + arms);}
+
+/* ---- the 12 infographics ---- */
+const ART = {
+  flatpress: lying(
+      gh(lb(98,114,118,122,11)+lb(118,122,104,98,9)) + gh(db(104,94))
+    + lb(98,114,110,84,11) + lb(110,84,118,56,9) + db(118,52)
+    + arr(112,94,118,62)),
+  incpress: incline(
+      gh(lb(105,118,124,124,11)+lb(124,124,112,100,9)) + gh(db(110,98))
+    + lb(105,118,114,90,11) + lb(114,90,122,62,9) + db(124,58)
+    + arr(120,98,124,66)),
+  flye: lying(
+      gh(lb(98,114,98,138,11)+lb(98,138,72,150,9)) + gh(db(66,150,80))
+    + lb(98,114,112,92,11) + lb(112,92,124,74,9) + db(128,72)
+    + arc("M78 144 Q96 96 124 80")),
+  ohtri: standing(
+      gh(lb(150,76,150,48,11)+lb(150,48,170,62,9)) + gh(db(174,64,90))
+    + lb(150,76,150,46,11) + lb(150,46,150,22,9) + db(150,18)
+    + arr(170,56,154,28)),
+  onerow: benchBrace(
+      gh(lb(150,108,150,136,11)+lb(150,136,150,160,9)) + gh(db(150,164))
+    + lb(150,108,156,134,11) + lb(156,134,168,120,9) + db(168,120)
+    + arr(150,158,166,126)),
+  bentrow: bent(
+      gh(lb(96,116,96,142,11)+lb(96,142,96,164,9)) + gh(db(96,168))
+    + lb(96,116,104,140,11) + lb(104,140,114,124,9) + db(114,124)
+    + arr(96,162,112,128)),
+  curl: standing(
+      gh(lb(150,76,150,106,11)+lb(150,106,150,128,9)) + gh(db(150,132))
+    + lb(150,76,150,106,11) + lb(150,106,134,88,9) + db(130,84,55)
+    + arc("M150 128 Q162 98 134 86")),
+  hammer: standing(
+      gh(lb(150,76,150,106,11)+lb(150,106,150,128,9)) + gh(db(150,132,90))
+    + lb(150,76,150,106,11) + lb(150,106,136,86,9) + db(132,82,90)
+    + arc("M150 128 Q162 98 136 84")),
+  shpress: seated(
+      gh(lb(150,98,172,106,11)+lb(172,106,168,82,9)) + gh(db(170,80))
+    + lb(150,98,158,74,11) + lb(158,74,164,50,9) + db(166,46)
+    + arr(172,80,166,54)),
+  latraise: standing(
+      gh(lb(150,76,150,104,11)+lb(150,104,150,124,9)) + gh(db(150,128))
+    + lb(150,76,176,80,11) + lb(176,80,204,84,9) + db(208,84)
+    + arc("M150 122 Q180 104 204 88")),
+  reardelt: bent(
+      gh(lb(96,116,96,142,11)+lb(96,142,96,162,9)) + gh(db(96,166))
+    + lb(96,116,120,110,11) + lb(120,110,146,106,9) + db(150,106)
+    + arc("M96 160 Q120 124 146 110")),
+  kickback: benchBrace(
+      gh(lb(150,108,178,120,11)+lb(178,120,178,148,9)) + gh(db(178,152))
+    + lb(150,108,178,120,11) + lb(178,120,208,112,9) + db(212,110)
+    + arr(178,146,206,114))
+};
+
+/* ----------------------------------------------------------------------
+   PROGRAM DATA
+---------------------------------------------------------------------- */
+const EX = {
+  flatpress:{name:"Flat Dumbbell Bench Press",target:"Chest",sets:4,reps:"8–10",rest:"90s",art:"flatpress",
+    cues:["Lie flat, feet planted. Hold a dumbbell in each hand at chest level, wrists stacked over elbows.",
+          "Press both weights straight up until arms are nearly straight (don't clang them together).",
+          "Lower under control until you feel a stretch across your chest, elbows about 45° from your body.",
+          "Keep shoulder blades pulled back and down into the bench the whole time."],
+    bad:["Bouncing the weights off your chest","Flaring elbows straight out to 90°","Lifting your hips off the bench"]},
+  incpress:{name:"Incline Dumbbell Press",target:"Upper Chest",sets:3,reps:"10–12",rest:"75s",art:"incpress",
+    cues:["Set the bench to about 30–45°. Sit back with a dumbbell in each hand at upper-chest height.",
+          "Press up and slightly inward until arms are extended.",
+          "Lower slowly to the top of your chest, keeping tension.",
+          "Higher incline = more shoulder; keep it ≤45° to stay on the chest."],
+    bad:["Setting the bench too upright","Letting elbows drop way below the bench","Pressing too fast"]},
+  flye:{name:"Dumbbell Flye",target:"Chest",sets:3,reps:"12",rest:"60s",art:"flye",
+    cues:["Lie flat, dumbbells above your chest, palms facing each other, slight bend in the elbows.",
+          "Open your arms out wide in an arc until you feel a chest stretch — keep that elbow bend fixed.",
+          "Squeeze your chest to bring the weights back together over your chest.",
+          "Think 'hugging a tree' — it's an arc, not a press."],
+    bad:["Bending/straightening elbows like a press","Going too deep and straining the shoulders","Using too heavy a weight"]},
+  ohtri:{name:"Overhead Triceps Extension",target:"Triceps",sets:3,reps:"12",rest:"60s",art:"ohtri",
+    cues:["Hold one dumbbell with both hands, pressed straight overhead (or use one per hand).",
+          "Keeping elbows pointing forward and still, lower the weight behind your head.",
+          "Extend back up by straightening the elbows — squeeze the triceps at the top.",
+          "Can be done seated for more back support."],
+    bad:["Elbows flaring out wide","Moving the upper arms instead of just the forearms","Arching the lower back"]},
+  onerow:{name:"One-Arm Dumbbell Row",target:"Back / Lats",sets:4,reps:"10 each",rest:"75s",art:"onerow",
+    cues:["Place one knee and one hand on the bench, back flat and roughly parallel to the floor.",
+          "Let the dumbbell hang straight down in your free hand.",
+          "Pull it up to your hip/lower ribs, driving the elbow back and squeezing your shoulder blade.",
+          "Lower slowly to a full stretch. Finish all reps, then switch sides."],
+    bad:["Rotating/twisting the torso to swing the weight","Shrugging the shoulder up to the ear","Pulling with a rounded back"]},
+  bentrow:{name:"Bent-Over Dumbbell Row",target:"Back",sets:3,reps:"10–12",rest:"75s",art:"bentrow",
+    cues:["Hinge at the hips, knees soft, back flat, torso leaning forward ~45°.",
+          "Let both dumbbells hang, palms facing in.",
+          "Row both weights to your waistline, elbows tucked, squeezing the shoulder blades together.",
+          "Lower under control — keep your core braced to protect the lower back."],
+    bad:["Standing too upright (turns it into a shrug)","Rounding the back","Using momentum / jerking the weights"]},
+  curl:{name:"Dumbbell Biceps Curl",target:"Biceps",sets:3,reps:"10–12",rest:"60s",art:"curl",
+    cues:["Stand tall, dumbbells at your sides, palms facing forward.",
+          "Curl the weights up toward your shoulders, keeping elbows pinned at your sides.",
+          "Squeeze the biceps at the top, then lower slowly to a full stretch.",
+          "You can alternate arms or curl both together."],
+    bad:["Swinging the body to lift","Letting elbows drift forward","Dropping the weights fast instead of lowering"]},
+  hammer:{name:"Hammer Curl",target:"Biceps / Forearm",sets:3,reps:"12",rest:"60s",art:"hammer",
+    cues:["Same as a curl, but keep palms facing each other (neutral grip) the whole way — like holding hammers.",
+          "Curl up keeping elbows fixed at your sides.",
+          "Lower slowly. Great for the outer biceps and forearms.",
+          "Keep wrists straight and firm."],
+    bad:["Rotating the wrists","Using the shoulders to swing","Half-range reps"]},
+  shpress:{name:"Seated Dumbbell Shoulder Press",target:"Shoulders",sets:4,reps:"8–10",rest:"90s",art:"shpress",
+    cues:["Sit upright on the bench (use a backrest if you have one). Dumbbells at shoulder height, palms forward.",
+          "Press straight overhead until arms are nearly locked out.",
+          "Lower under control until elbows are roughly level with your shoulders.",
+          "Keep your core tight and ribs down — don't lean back."],
+    bad:["Arching the lower back to push the weight","Half-pressing (not reaching full extension)","Banging the weights together at the top"]},
+  latraise:{name:"Lateral Raise",target:"Side Delts",sets:3,reps:"12–15",rest:"45s",art:"latraise",
+    cues:["Stand with dumbbells at your sides, slight bend in the elbows.",
+          "Raise both arms out to the sides until they reach shoulder height — lead with the elbows.",
+          "Pause, then lower slowly. Imagine pouring water from the weights at the top.",
+          "Use a lighter weight than you think — form matters most here."],
+    bad:["Swinging / using momentum","Shrugging the traps up","Raising above shoulder height"]},
+  reardelt:{name:"Bent-Over Rear Delt Flye",target:"Rear Delts",sets:3,reps:"15",rest:"45s",art:"reardelt",
+    cues:["Hinge forward at the hips, back flat, dumbbells hanging beneath you, slight elbow bend.",
+          "Raise both arms out to the sides until level with your torso.",
+          "Squeeze the shoulder blades together at the top, then lower slowly.",
+          "Keep the movement strict — light weight, controlled."],
+    bad:["Turning it into a row (pulling to the hips)","Using the lower back to swing up","Going too heavy"]},
+  kickback:{name:"Triceps Kickback",target:"Triceps",sets:3,reps:"12–15",rest:"45s",art:"kickback",
+    cues:["Brace one hand on the bench, torso bent forward. Pin your working upper arm against your side.",
+          "Keeping the upper arm completely still, straighten your elbow to extend the weight back.",
+          "Squeeze the triceps hard at the top, then return slowly.",
+          "Only the forearm should move."],
+    bad:["Letting the upper arm swing","Using momentum","Not fully straightening the arm"]}
+};
+
+const DAYS = {
+  A:{title:"Chest & Triceps",sub:"Push day",ex:["flatpress","incpress","flye","ohtri","kickback"]},
+  B:{title:"Back & Biceps",sub:"Pull day",ex:["onerow","bentrow","curl","hammer"]},
+  C:{title:"Shoulders & Arms",sub:"Delts + arms",ex:["shpress","latraise","reardelt","curl"]}
+};
+// 0=Sun … 6=Sat  -> workout key or null (rest)
+const WEEKMAP = {1:"A",3:"B",5:"C"};
+const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+/* ----------------------------------------------------------------------
+   STATE / STORAGE
+---------------------------------------------------------------------- */
+const KEY="ubw_progress_v1";
+function load(){try{return JSON.parse(localStorage.getItem(KEY))||{}}catch(e){return{}}}
+function save(p){localStorage.setItem(KEY,JSON.stringify(p))}
+function dateKey(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+function today(){return new Date()}
+const TKEY=dateKey(today());
+
+let selectedDow = today().getDay();
+if(!WEEKMAP[selectedDow]){ // if today is a rest day, jump to the next workout day for browsing
+  for(let i=1;i<=7;i++){const d=(today().getDay()+i)%7; if(WEEKMAP[d]){selectedDow=d;break;}}
+}
+
+function weekDates(){ // Mon..Sun dates of the current week
+  const t=today(); const day=t.getDay(); const mondayOffset=(day===0?-6:1-day);
+  const arr=[]; for(let i=0;i<7;i++){const d=new Date(t); d.setDate(t.getDate()+mondayOffset+i); arr.push(d);} return arr;
+}
+function exDone(exId,dk){const p=load(); const a=(p[dk]||{})[exId]; if(!a)return false; const need=EX[exId].sets; let c=0; for(let i=0;i<need;i++) if(a[i])c++; return c===need;}
+function dayComplete(dowKey,dk){const w=WEEKMAP[dowKey]; if(!w)return false; return DAYS[w].ex.every(id=>exDone(id,dk));}
+
+/* ----------------------------------------------------------------------
+   RENDER
+---------------------------------------------------------------------- */
+function todayProgress(){
+  const w=WEEKMAP[today().getDay()]; if(!w)return null;
+  const p=load(); let total=0,done=0;
+  DAYS[w].ex.forEach(id=>{total+=EX[id].sets; const a=(p[TKEY]||{})[id]||[]; for(let i=0;i<EX[id].sets;i++) if(a[i])done++;});
+  return {total,done,key:w};
+}
+
+function renderToday(){
+  const w=WEEKMAP[today().getDay()];
+  const card=document.getElementById("todayCard");
+  if(!w){
+    card.innerHTML=`<div class="lbl">Today · ${DOW[today().getDay()]}</div>
+      <div class="name">Rest Day 😴</div>
+      <div class="meta">Recover today. Tap a day below to preview its workout.</div>`;
+    return;
+  }
+  const pr=todayProgress();
+  const pct=pr.total?Math.round(pr.done/pr.total*100):0;
+  card.innerHTML=`<div class="lbl">Today · ${DOW[today().getDay()]}</div>
+    <div class="name">${DAYS[w].title}</div>
+    <div class="meta">${DAYS[w].sub} · ${DAYS[w].ex.length} exercises</div>
+    <div class="bar"><i style="width:${pct}%"></i></div>
+    <div class="barlbl"><span>${pr.done}/${pr.total} sets done${pct===100?" · 🎉 complete!":""}</span>
+      <button class="reset" onclick="resetToday()">Reset today</button></div>`;
+}
+
+function renderWeek(){
+  const wd=weekDates(); const el=document.getElementById("week"); el.innerHTML="";
+  wd.forEach(d=>{
+    const dow=d.getDay(); const wkey=WEEKMAP[dow];
+    const isToday=dateKey(d)===TKEY;
+    const sel=dow===selectedDow;
+    const complete=dayComplete(dow,dateKey(d));
+    const div=document.createElement("div");
+    div.className="day"+(sel?" sel":"")+(isToday?" today":"");
+    div.innerHTML=`${complete?'<span class="chk">✓</span>':""}
+      <div class="dn">${DOW[dow]}</div>
+      <div class="dt">${wkey?DAYS[wkey].title.split(" ")[0]:""}</div>
+      <div class="dot ${wkey?"":"rest"}"></div>`;
+    div.onclick=()=>{selectedDow=dow; renderWeek(); renderList();};
+    el.appendChild(div);
+  });
+}
+
+function renderList(){
+  const wkey=WEEKMAP[selectedDow];
+  document.getElementById("dayTitle").textContent = wkey?DAYS[wkey].title:"Rest Day";
+  document.getElementById("dayTag").textContent = wkey?DAYS[wkey].sub:"";
+  const list=document.getElementById("list"); list.innerHTML="";
+
+  if(!wkey){
+    list.innerHTML=`<div class="rest-card"><div class="em">🛌</div>
+      <div class="t">${DOW[selectedDow]} is a rest day</div>
+      <div class="d">Let your muscles rebuild. Light walking or stretching is great.</div></div>`;
+    return;
+  }
+
+  const note=selectedDow===today().getDay()?"":
+    `<div class="warm" style="background:rgba(34,211,238,.08);border-color:rgba(34,211,238,.25);color:#a5f3fc">
+      👀 Previewing <b>${DOW[selectedDow]}</b>. Any sets you tick are logged to <b>today</b> (${TKEY}).</div>`;
+  list.insertAdjacentHTML("beforeend", note +
+    `<div class="warm"><b>Warm up first:</b> 5 min light cardio, then 1–2 light sets of the first exercise. Move smoothly, breathe out as you lift.</div>`);
+
+  const p=load(); const todayState=p[TKEY]||{};
+  DAYS[wkey].ex.forEach((id,idx)=>{
+    const e=EX[id]; const state=todayState[id]||[];
+    let setsHtml="";
+    for(let i=0;i<e.sets;i++) setsHtml+=`<button class="setbtn ${state[i]?"on":""}" data-ex="${id}" data-set="${i}">${i+1}</button>`;
+    setsHtml+=`<span class="hint">tap each set as you finish</span>`;
+
+    let cues=""; e.cues.forEach(c=>cues+=`<li>${c}</li>`);
+    let bad=""; e.bad.forEach(b=>bad+=`<li>${b}</li>`);
+
+    const card=document.createElement("div"); card.className="ex";
+    card.innerHTML=`
+      <div class="top">
+        ${ART[e.art]}
+        <div class="info">
+          <div class="nm">${idx+1}. ${e.name}</div>
+          <div class="badges">
+            <span class="badge sr">${e.sets} × ${e.reps}</span>
+            <span class="badge tgt">${e.target}</span>
+            <span class="badge">Rest ${e.rest}</span>
+          </div>
+        </div>
+      </div>
+      <div class="sets">${setsHtml}</div>
+      <button class="guide-toggle">How to do it &amp; form guide <span class="ar">▾</span></button>
+      <div class="guide">
+        ${ART[e.art].replace('class="exsvg"','class="big"')}
+        <h4>Step by step</h4>
+        <ol>${cues}</ol>
+        <h4 class="bad">Avoid these mistakes</h4>
+        <ul>${bad}</ul>
+      </div>`;
+    list.appendChild(card);
+
+    card.querySelector(".guide-toggle").onclick=function(){
+      this.classList.toggle("open"); card.querySelector(".guide").classList.toggle("open");
+    };
+    card.querySelectorAll(".setbtn").forEach(btn=>{
+      btn.onclick=()=>toggleSet(btn.dataset.ex, +btn.dataset.set, btn);
+    });
+  });
+}
+
+function toggleSet(exId,setIdx,btn){
+  const p=load(); if(!p[TKEY])p[TKEY]={}; if(!p[TKEY][exId])p[TKEY][exId]=[];
+  p[TKEY][exId][setIdx]=!p[TKEY][exId][setIdx]; save(p);
+  btn.classList.toggle("on", p[TKEY][exId][setIdx]);
+  renderToday(); renderWeek();
+}
+function resetToday(){
+  const p=load(); if(p[TKEY]){delete p[TKEY]; save(p);}
+  renderToday(); renderWeek(); renderList();
+}
+
+renderToday(); renderWeek(); renderList();
+
+/* ======================================================================
+   NUTRITION  ·  targets + food log + AI estimate
+====================================================================== */
+const PKEY="ubw_profile_v1", FKEY="ubw_food_v1", RKEY="ubw_run_v1", AKEY="ubw_apikey_v1";
+const AI_MODEL="claude-haiku-4-5-20251001";
+
+function getProfile(){try{return JSON.parse(localStorage.getItem(PKEY))}catch(e){return null}}
+function setProfileData(p){localStorage.setItem(PKEY,JSON.stringify(p))}
+function getFoods(dk){try{return (JSON.parse(localStorage.getItem(FKEY))||{})[dk]||[]}catch(e){return[]}}
+function saveFoods(dk,arr){
+  var all={}; try{all=JSON.parse(localStorage.getItem(FKEY))||{}}catch(e){}
+  all[dk]=arr;
+  try{localStorage.setItem(FKEY,JSON.stringify(all));}
+  catch(e){ arr.forEach(function(f){f.photo=null;}); all[dk]=arr;
+    try{localStorage.setItem(FKEY,JSON.stringify(all)); alert("Storage was full — photos for today were dropped to keep your food data.");}
+    catch(e2){alert("Storage full. Delete some logged foods/days.");} }
+}
+function getRun(dk){try{return (JSON.parse(localStorage.getItem(RKEY))||{})[dk]||{km:0,min:0}}catch(e){return{km:0,min:0}}}
+function saveRun(dk,r){var all={};try{all=JSON.parse(localStorage.getItem(RKEY))||{}}catch(e){}; all[dk]=r; localStorage.setItem(RKEY,JSON.stringify(all));}
+
+const ACT={sed:1.2, light:1.35, mod:1.5, high:1.7};
+const GOAL={
+  lose:{adj:-0.20,pro:2.0,l:"Lose fat"},
+  maint:{adj:0,pro:1.6,l:"Maintain"},
+  build:{adj:0.10,pro:2.0,l:"Build muscle"},
+  gain:{adj:0.15,pro:1.8,l:"Gain weight"}
+};
+
+function liftMinutes(dow){var w=WEEKMAP[dow]; if(!w)return 0; var min=5; DAYS[w].ex.forEach(function(id){var e=EX[id]; var rest=parseInt(e.rest)||60; min+=e.sets*(35+rest)/60;}); return Math.round(min);}
+function liftKcal(dow,kg){var min=liftMinutes(dow); return Math.round(5*3.5*kg/200*min);}        // MET 5 for free weights
+function runKcal(run,kg){ if(run.km>0) return Math.round(run.km*kg*1.036); if(run.min>0) return Math.round(9.8*3.5*kg/200*run.min); return 0; }
+
+function computeTargets(dk,dow){
+  var p=getProfile(); if(!p)return null;
+  var kg=+p.weight, cm=+p.height, age=+p.age;
+  var bmr = 10*kg + 6.25*cm - 5*age + (p.sex==="f"?-161:5);
+  var base = bmr*(ACT[p.activity]||1.2);
+  var lift = liftKcal(dow,kg);
+  var run  = runKcal(getRun(dk),kg);
+  var g = GOAL[p.goal]||GOAL.maint;
+  var tdee = base+lift+run;
+  var cal = Math.round(tdee*(1+g.adj));
+  var protein = Math.round(kg*g.pro);
+  var fat = Math.round(cal*0.25/9);
+  var carbs = Math.max(0, Math.round((cal - protein*4 - fat*9)/4));
+  return {cal:cal, protein:protein, fat:fat, carbs:carbs, base:Math.round(base), lift:lift, run:run, goal:g.l, adj:Math.round(cal-tdee)};
+}
+
+/* ---- small builders ---- */
+function esc(s){return (s||"").replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];});}
+function val(id){var e=document.getElementById(id);return e?e.value.trim():"";}
+function setVal(id,v){var e=document.getElementById(id);if(e)e.value=v;}
+function tnum(v,l,cls){return '<div class="tnum '+(cls||"")+'"><div class="v">'+v+'</div><div class="l">'+l+'</div></div>';}
+function prog(label,val,target,unit){
+  val=Math.round(val); var pct=target>0?Math.min(100,Math.round(val/target*100)):0; var over=val>target;
+  var color=over?"linear-gradient(90deg,#fbbf24,#f87171)":"linear-gradient(90deg,var(--accent),var(--accent2))";
+  return '<div class="pwrap"><div class="top"><span>'+label+'</span><span class="r">'+val+' / '+target+' '+unit
+    +(over?" · over "+(val-target):" · "+(target-val)+" left")+'</span></div>'
+    +'<div class="pbar"><i style="width:'+pct+'%;background:'+color+'"></i></div></div>';
+}
+function foodRow(f){
+  var img=f.photo?'<img src="'+f.photo+'">':'<div class="ph">🍽️</div>';
+  return '<div class="food">'+img+'<div class="fb"><div class="fn">'+esc(f.name||"Food")+'</div>'
+    +(f.notes?'<div class="fnotes">'+esc(f.notes)+'</div>':'')
+    +'<div class="fm"><span class="chip k">'+(+f.kcal||0)+' kcal</span><span class="chip c">'+(+f.carb||0)+'g C</span>'
+    +'<span class="chip">'+(+f.protein||0)+'g P</span><span class="chip">'+(+f.fat||0)+'g F</span></div></div>'
+    +'<button class="del" data-del="'+f.id+'">✕</button></div>';
+}
+function selectHtml(id,opts,cur){var s='<select id="'+id+'">';opts.forEach(function(o){s+='<option value="'+o[0]+'"'+(cur===o[0]?" selected":"")+'>'+o[1]+'</option>';});return s+'</select>';}
+function profileForm(p,intro){
+  p=p||{};
+  return '<div class="ncard"><h3>👤 Your profile</h3>'
+    +(intro?'<div class="muted">Fill this in once so the app can calculate your calorie &amp; carb targets. It saves on this device.</div>':'')
+    +'<div class="row2">'
+      +'<label class="field">Sex'+selectHtml("pSex",[["m","Male"],["f","Female"]],p.sex||"m")+'</label>'
+      +'<label class="field">Age<input id="pAge" type="number" inputmode="numeric" value="'+(p.age||"")+'"></label>'
+    +'</div>'
+    +'<div class="row2">'
+      +'<label class="field">Height (cm)<input id="pHeight" type="number" inputmode="numeric" value="'+(p.height||"")+'"></label>'
+      +'<label class="field">Weight (kg)<input id="pWeight" type="number" inputmode="decimal" step="0.1" value="'+(p.weight||"")+'"></label>'
+    +'</div>'
+    +'<label class="field">Daily activity (outside workouts)'+selectHtml("pAct",[["sed","Sedentary (desk job)"],["light","Lightly active"],["mod","Moderately active"],["high","Very active"]],p.activity||"light")+'</label>'
+    +'<label class="field">Goal'+selectHtml("pGoal",[["lose","Lose fat"],["maint","Maintain"],["build","Build muscle"],["gain","Gain weight"]],p.goal||"build")+'</label>'
+    +'<button class="btn" id="saveProfile">Save profile</button></div>';
+}
+function apiKeyBlock(){
+  var k=localStorage.getItem(AKEY);
+  if(k) return '<div class="muted">🔑 AI key saved ✓ ('+esc(k.slice(0,7))+'…) <button class="linkbtn" id="clearKey">remove</button></div>';
+  return '<label class="field">🔑 Anthropic API key (for the AI estimate)<input id="apiKey" type="password" placeholder="sk-ant-..."></label>'
+    +'<button class="btn sec" id="saveKey">Save key on this device</button>'
+    +'<div class="muted" style="margin-top:6px">Stored only in this browser. Get one at console.anthropic.com → API keys.</div>';
+}
+
+/* ---- render ---- */
+function renderNutrition(){
+  var dk=TKEY, dow=today().getDay();
+  var el=document.getElementById("view-nutrition");
+  var p=getProfile();
+  if(!p){ el.innerHTML=profileForm(null,true); bindProfile(); return; }
+
+  var t=computeTargets(dk,dow);
+  var wname = WEEKMAP[dow]?DAYS[WEEKMAP[dow]].title:"Rest day";
+  var foods=getFoods(dk);
+  var eaten=foods.reduce(function(a,f){a.cal+=+f.kcal||0;a.carb+=+f.carb||0;a.pro+=+f.protein||0;a.fat+=+f.fat||0;return a;},{cal:0,carb:0,pro:0,fat:0});
+  var r=getRun(dk);
+
+  var h="";
+  /* targets */
+  h+='<div class="ncard"><h3>🎯 Today’s targets <span class="muted">· '+DOW[dow]+' · '+wname+'</span></h3>'
+    +'<div class="tgrid">'+tnum(t.cal,"kcal","")+tnum(t.carbs+"g","carbs","carb")+tnum(t.protein+"g","protein","")+tnum(t.fat+"g","fat","")+'</div>'
+    +'<div class="breakdown">Base burn <b>'+t.base+'</b> + lifting <b>'+t.lift+'</b> + running <b>'+t.run+'</b> = <b>'+(t.base+t.lift+t.run)+'</b> kcal'
+      +'<br>Goal: <b>'+t.goal+'</b> ('+(t.adj>=0?"+":"")+t.adj+' kcal) → eat <b>'+t.cal+'</b> kcal'
+      +'<br><span style="color:var(--accent)">Carbs rise on bigger training days to fuel your lifts &amp; runs.</span></div></div>';
+
+  /* running */
+  h+='<div class="ncard"><h3>🏃 Today’s running</h3><div class="muted">Log a run to add it to today’s targets.</div>'
+    +'<div class="row2">'
+      +'<label class="field">Distance (km)<input id="runKm" type="number" inputmode="decimal" step="0.1" value="'+(r.km||"")+'"></label>'
+      +'<label class="field">Time (min)<input id="runMin" type="number" inputmode="numeric" value="'+(r.min||"")+'"></label>'
+    +'</div><button class="btn sec" id="saveRun">Save run</button></div>';
+
+  /* eaten + log */
+  h+='<div class="ncard"><h3>📊 Eaten today</h3>'
+    +prog("Calories",eaten.cal,t.cal,"kcal")+prog("Carbs",eaten.carb,t.carbs,"g")
+    +prog("Protein",eaten.pro,t.protein,"g")+prog("Fat",eaten.fat,t.fat,"g")
+    +'<div style="height:6px"></div>';
+  if(foods.length){ foods.forEach(function(f){h+=foodRow(f);}); }
+  else { h+='<div class="muted" style="margin-top:10px">No foods logged yet — add what you plan to eat below.</div>'; }
+  h+='</div>';
+
+  /* add food */
+  h+='<div class="ncard"><h3>➕ Add a food</h3>'
+    +'<label class="field">📷 Photo (optional)<input id="foodPhoto" type="file" accept="image/*" capture="environment"></label>'
+    +'<div id="photoPreview"></div>'
+    +'<label class="field">Notes / ingredients<textarea id="foodNotes" placeholder="e.g. Chicken rice — about 2 cups rice, 1 grilled chicken thigh, fried egg, cucumber"></textarea></label>'
+    +'<button class="btn ai" id="estimateBtn">✨ Estimate calories with AI</button>'
+    +'<div class="status" id="estStatus"></div>'
+    +'<div class="row2"><label class="field">Name<input id="fName" placeholder="Food name"></label>'
+      +'<label class="field">Calories<input id="fKcal" type="number" inputmode="numeric"></label></div>'
+    +'<div class="row2"><label class="field">Carbs (g)<input id="fCarb" type="number" inputmode="numeric"></label>'
+      +'<label class="field">Protein (g)<input id="fPro" type="number" inputmode="numeric"></label></div>'
+    +'<label class="field">Fat (g)<input id="fFat" type="number" inputmode="numeric"></label>'
+    +'<button class="btn" id="addFood">Add to today</button></div>';
+
+  /* settings */
+  h+='<div class="ncard"><h3>⚙️ Settings</h3>'+apiKeyBlock()
+    +'<button class="btn sec" id="editProfile">Edit profile</button><div id="profileEditWrap"></div></div>';
+
+  h+='<div class="warnbox">⚠️ Targets and AI estimates are approximations to guide you — not medical or dietary advice. The AI estimate needs an internet connection; everything else works offline.</div>';
+
+  el.innerHTML=h;
+  bindNutrition(dk);
+}
+
+/* ---- bindings ---- */
+function bindProfile(){
+  var b=document.getElementById("saveProfile"); if(!b)return;
+  b.onclick=function(){
+    var p={sex:val("pSex"),age:val("pAge"),height:val("pHeight"),weight:val("pWeight"),activity:val("pAct"),goal:val("pGoal")};
+    if(!p.age||!p.height||!p.weight){alert("Please fill in age, height and weight.");return;}
+    setProfileData(p); renderNutrition();
+  };
+}
+function bindNutrition(dk){
+  bindProfile();
+  var photoData={v:null};
+
+  var sr=document.getElementById("saveRun");
+  if(sr) sr.onclick=function(){ saveRun(dk,{km:+val("runKm")||0,min:+val("runMin")||0}); renderNutrition(); };
+
+  var pf=document.getElementById("foodPhoto");
+  if(pf) pf.onchange=function(){ var file=pf.files[0]; if(!file)return;
+    compressImage(file,function(d){ photoData.v=d; document.getElementById("photoPreview").innerHTML='<img src="'+d+'" style="width:84px;height:84px;object-fit:cover;border-radius:10px;margin-top:8px">'; }); };
+
+  var eb=document.getElementById("estimateBtn"); if(eb) eb.onclick=function(){ aiEstimate(photoData.v); };
+
+  var af=document.getElementById("addFood");
+  if(af) af.onclick=function(){
+    var f={id:"f"+Date.now()+Math.floor(Math.random()*1e4), name:val("fName")||"Food", notes:val("foodNotes"),
+           photo:photoData.v, kcal:+val("fKcal")||0, carb:+val("fCarb")||0, protein:+val("fPro")||0, fat:+val("fFat")||0};
+    if(!f.kcal && !f.notes && !f.photo){alert("Add a photo, some notes, or calories first.");return;}
+    var arr=getFoods(dk); arr.push(f); saveFoods(dk,arr); renderNutrition();
+  };
+
+  document.querySelectorAll("[data-del]").forEach(function(b){
+    b.onclick=function(){ var id=b.getAttribute("data-del"); saveFoods(dk,getFoods(dk).filter(function(x){return x.id!==id;})); renderNutrition(); };
+  });
+
+  var sk=document.getElementById("saveKey"); if(sk) sk.onclick=function(){ var v=val("apiKey"); if(v){localStorage.setItem(AKEY,v); renderNutrition();} };
+  var ck=document.getElementById("clearKey"); if(ck) ck.onclick=function(){ localStorage.removeItem(AKEY); renderNutrition(); };
+  var ep=document.getElementById("editProfile"); if(ep) ep.onclick=function(){ document.getElementById("profileEditWrap").innerHTML=profileForm(getProfile(),false); bindProfile(); };
+}
+
+function compressImage(file,cb){
+  var rd=new FileReader();
+  rd.onload=function(){ var img=new Image(); img.onload=function(){
+    var max=512,w=img.width,h=img.height;
+    if(w>h){ if(w>max){h=Math.round(h*max/w); w=max;} } else { if(h>max){w=Math.round(w*max/h); h=max;} }
+    var c=document.createElement("canvas"); c.width=w; c.height=h; c.getContext("2d").drawImage(img,0,0,w,h);
+    cb(c.toDataURL("image/jpeg",0.6));
+  }; img.src=rd.result; };
+  rd.readAsDataURL(file);
+}
+
+function aiEstimate(photoData){
+  var key=localStorage.getItem(AKEY);
+  var st=document.getElementById("estStatus");
+  var notes=val("foodNotes");
+  if(!key){ st.className="status err"; st.textContent="Set your Anthropic API key in Settings (below) first."; return; }
+  if(!notes && !photoData){ st.className="status err"; st.textContent="Add a photo and/or notes to estimate."; return; }
+  st.className="status"; st.textContent="✨ Estimating… (needs internet)";
+  var btn=document.getElementById("estimateBtn"); if(btn)btn.disabled=true;
+
+  var content=[];
+  if(photoData) content.push({type:"image",source:{type:"base64",media_type:"image/jpeg",data:photoData.split(",")[1]}});
+  content.push({type:"text",text:'You are a nutrition estimator. Estimate the TOTAL calories and macros for the single portion of food shown and/or described. Assume realistic restaurant/home serving sizes if amounts are vague. Respond with ONLY a compact JSON object and no other text: {"name":"short food name","calories":<int>,"carbs_g":<int>,"protein_g":<int>,"fat_g":<int>}. Food: '+(notes||"(see image)")});
+
+  fetch("https://api.anthropic.com/v1/messages",{
+    method:"POST",
+    headers:{"content-type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+    body:JSON.stringify({model:AI_MODEL,max_tokens:300,messages:[{role:"user",content:content}]})
+  })
+  .then(function(res){return res.json();})
+  .then(function(data){
+    if(data.error) throw new Error(data.error.message||"API error");
+    var txt=(data.content&&data.content[0]&&data.content[0].text)||"";
+    var m=txt.match(/\{[\s\S]*\}/); if(!m) throw new Error("Couldn't read the estimate.");
+    var j=JSON.parse(m[0]);
+    if(j.name && !val("fName")) setVal("fName",j.name);
+    setVal("fKcal",Math.round(j.calories||0)); setVal("fCarb",Math.round(j.carbs_g||0));
+    setVal("fPro",Math.round(j.protein_g||0)); setVal("fFat",Math.round(j.fat_g||0));
+    st.className="status ok"; st.textContent="✓ Estimated — adjust if needed, then tap Add.";
+  })
+  .catch(function(e){ st.className="status err"; st.textContent="Error: "+e.message+" (check your key & internet)"; })
+  .then(function(){ if(btn)btn.disabled=false; });
+}
+
+/* ---- tabs ---- */
+document.querySelectorAll(".tab").forEach(function(t){
+  t.onclick=function(){
+    document.querySelectorAll(".tab").forEach(function(x){x.classList.remove("on");}); t.classList.add("on");
+    var v=t.getAttribute("data-view");
+    document.getElementById("view-workout").style.display = v==="workout"?"":"none";
+    document.getElementById("view-nutrition").style.display = v==="nutrition"?"":"none";
+    if(v==="nutrition") renderNutrition();
+  };
+});
+</script>
+<script>
+  if("serviceWorker" in navigator){ window.addEventListener("load",function(){ navigator.serviceWorker.register("sw.js").catch(function(){}); }); }
+</script>
+</body>
+</html>
