@@ -168,6 +168,30 @@
   .linkbtn{background:none;border:none;color:var(--accent2);font-size:12px;cursor:pointer;text-decoration:underline;padding:0}
   .warnbox{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);color:#fde68a;border-radius:12px;padding:12px;font-size:12.5px;margin-top:14px;line-height:1.6}
   .empty{background:var(--card);border:1px dashed var(--line);border-radius:16px;padding:22px 16px;text-align:center;color:var(--muted);margin-top:14px}
+
+  /* schedule editor + running */
+  .toolbar{display:flex;justify-content:flex-end;margin-top:10px}
+  .miniedit{background:var(--card);border:1px solid var(--line);color:var(--accent2);border-radius:10px;padding:7px 12px;font-size:13px;font-weight:600;cursor:pointer}
+  .miniedit:active{transform:scale(.97)}
+  .day .runmark{position:absolute;top:3px;left:5px;font-size:10px}
+  .erow{display:grid;grid-template-columns:42px 1fr;gap:10px;align-items:start;margin-top:8px}
+  .erow .dlab{font-size:13px;font-weight:700;color:var(--muted);padding-top:10px}
+  .erow.today-row .dlab{color:var(--accent)}
+  .erow select,.erow input{background:var(--bg2);border:1px solid var(--line);color:var(--text);border-radius:9px;padding:9px;font-size:15px;font-family:inherit;width:100%}
+  .erow select:focus,.erow input:focus{outline:none;border-color:var(--accent)}
+  .erow .sub{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:6px}
+  .runrow{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:9px 11px;margin-top:7px}
+  .runrow.today{border-color:var(--accent)}
+  .runrow .d{font-size:13px;font-weight:700} .runrow .d small{color:var(--muted);font-weight:400}
+  .runrow .info{font-size:13px;color:var(--muted);text-align:right}
+  .rt{display:inline-block;font-size:11px;border-radius:99px;padding:1px 8px;border:1px solid var(--line);color:var(--accent2);margin-right:6px}
+  .hist{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid var(--line);padding:9px 0;font-size:13px}
+  .hist:last-child{border-bottom:none}
+  .hist .hl{color:var(--muted)} .hist .hr{text-align:right}
+  .statline{display:flex;gap:8px;margin-top:14px}
+  .stat{flex:1;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;text-align:center}
+  .stat .v{font-size:20px;font-weight:800;color:var(--accent)} .stat .l{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:3px}
+  .pill.rest{opacity:.5}
 </style>
 </head>
 <body>
@@ -189,6 +213,7 @@
 
   <div class="tabs">
     <button class="tab on" data-view="workout">🏋️ Workout</button>
+    <button class="tab" data-view="running">🏃 Running</button>
     <button class="tab" data-view="nutrition">🍽️ Nutrition</button>
   </div>
 
@@ -196,6 +221,9 @@
   <div class="today" id="todayCard"></div>
 
   <div class="week" id="week"></div>
+
+  <div class="toolbar"><button class="miniedit" id="editSplit">✏️ Edit weekly split</button></div>
+  <div id="splitEditor"></div>
 
   <div class="sectitle">
     <h2 id="dayTitle"></h2>
@@ -207,12 +235,10 @@
 
   <div id="view-nutrition" style="display:none"></div>
 
+  <div id="view-running" style="display:none"></div>
+
   <footer>
-    <div>Program split &nbsp;·&nbsp;
-      <span class="pill">Mon — Chest &amp; Triceps</span>
-      <span class="pill">Wed — Back &amp; Biceps</span>
-      <span class="pill">Fri — Shoulders &amp; Arms</span>
-    </div>
+    <div id="splitSummary"></div>
     <div style="margin-top:10px">Tip: rest at least one day between sessions. Add weight when you can finish all sets with good form.</div>
     <div style="margin-top:6px;opacity:.7">Save this file anywhere — open it offline on iPhone or laptop. Not medical advice.</div>
   </footer>
@@ -423,8 +449,12 @@ const DAYS = {
   B:{title:"Back & Biceps",sub:"Pull day",ex:["onerow","bentrow","curl","hammer"]},
   C:{title:"Shoulders & Arms",sub:"Delts + arms",ex:["shpress","latraise","reardelt","curl"]}
 };
-// 0=Sun … 6=Sat  -> workout key or null (rest)
-const WEEKMAP = {1:"A",3:"B",5:"C"};
+// 0=Sun … 6=Sat  -> workout key ("A"/"B"/"C") or "" (rest). Editable & saved on device.
+const DEFAULT_WEEKMAP = {0:"",1:"A",2:"",3:"B",4:"",5:"C",6:""};
+const WMKEY="ubw_weekmap_v1";
+function loadWeekMap(){ try{var s=JSON.parse(localStorage.getItem(WMKEY)); if(s&&typeof s==="object")return s;}catch(e){} return Object.assign({},DEFAULT_WEEKMAP); }
+function saveWeekMap(){ localStorage.setItem(WMKEY, JSON.stringify(WEEKMAP)); }
+let WEEKMAP = loadWeekMap();
 const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 
 /* ----------------------------------------------------------------------
@@ -488,6 +518,7 @@ function renderWeek(){
     const div=document.createElement("div");
     div.className="day"+(sel?" sel":"")+(isToday?" today":"");
     div.innerHTML=`${complete?'<span class="chk">✓</span>':""}
+      ${RUNPLAN[dow]?'<span class="runmark">🏃</span>':""}
       <div class="dn">${DOW[dow]}</div>
       <div class="dt">${wkey?DAYS[wkey].title.split(" ")[0]:""}</div>
       <div class="dot ${wkey?"":"rest"}"></div>`;
@@ -568,8 +599,6 @@ function resetToday(){
   const p=load(); if(p[TKEY]){delete p[TKEY]; save(p);}
   renderToday(); renderWeek(); renderList();
 }
-
-renderToday(); renderWeek(); renderList();
 
 /* ======================================================================
    NUTRITION  ·  targets + food log + AI estimate
@@ -685,12 +714,11 @@ function renderNutrition(){
       +'<br>Goal: <b>'+t.goal+'</b> ('+(t.adj>=0?"+":"")+t.adj+' kcal) → eat <b>'+t.cal+'</b> kcal'
       +'<br><span style="color:var(--accent)">Carbs rise on bigger training days to fuel your lifts &amp; runs.</span></div></div>';
 
-  /* running */
-  h+='<div class="ncard"><h3>🏃 Today’s running</h3><div class="muted">Log a run to add it to today’s targets.</div>'
-    +'<div class="row2">'
-      +'<label class="field">Distance (km)<input id="runKm" type="number" inputmode="decimal" step="0.1" value="'+(r.km||"")+'"></label>'
-      +'<label class="field">Time (min)<input id="runMin" type="number" inputmode="numeric" value="'+(r.min||"")+'"></label>'
-    +'</div><button class="btn sec" id="saveRun">Save run</button></div>';
+  /* running (read-only summary; logging happens in the Running tab) */
+  var runTxt = (+r.km||+r.min) ? ((r.type?r.type+" run · ":"")+(+r.km?r.km+" km":"")+(+r.km&&+r.min?" · ":"")+(+r.min?r.min+" min":"")+" → +"+t.run+" kcal added") : "No run logged today.";
+  h+='<div class="ncard"><h3>🏃 Today’s running</h3>'
+    +'<div class="muted">'+runTxt+'</div>'
+    +'<button class="btn sec" id="goRunning">Open Running tab to log a run</button></div>';
 
   /* eaten + log */
   h+='<div class="ncard"><h3>📊 Eaten today</h3>'
@@ -738,8 +766,8 @@ function bindNutrition(dk){
   bindProfile();
   var photoData={v:null};
 
-  var sr=document.getElementById("saveRun");
-  if(sr) sr.onclick=function(){ saveRun(dk,{km:+val("runKm")||0,min:+val("runMin")||0}); renderNutrition(); };
+  var gr=document.getElementById("goRunning");
+  if(gr) gr.onclick=function(){ switchTab("running"); };
 
   var pf=document.getElementById("foodPhoto");
   if(pf) pf.onchange=function(){ var file=pf.files[0]; if(!file)return;
@@ -808,16 +836,146 @@ function aiEstimate(photoData){
   .then(function(){ if(btn)btn.disabled=false; });
 }
 
-/* ---- tabs ---- */
-document.querySelectorAll(".tab").forEach(function(t){
-  t.onclick=function(){
-    document.querySelectorAll(".tab").forEach(function(x){x.classList.remove("on");}); t.classList.add("on");
-    var v=t.getAttribute("data-view");
-    document.getElementById("view-workout").style.display = v==="workout"?"":"none";
-    document.getElementById("view-nutrition").style.display = v==="nutrition"?"":"none";
-    if(v==="nutrition") renderNutrition();
+/* ======================================================================
+   RUNNING  ·  editable weekly schedule + completed-run log
+====================================================================== */
+const RPKEY="ubw_runplan_v1";
+const RUN_TYPES=["Easy","Long","Tempo","Intervals","Recovery","Race"];
+const DEFAULT_RUNPLAN={0:null,1:null,2:{type:"Easy",km:5,min:30,note:""},3:null,4:{type:"Intervals",km:6,min:40,note:"e.g. 6×400m hard"},5:null,6:{type:"Long",km:12,min:75,note:""}};
+function loadRunPlan(){ try{var s=JSON.parse(localStorage.getItem(RPKEY)); if(s&&typeof s==="object")return s;}catch(e){} return JSON.parse(JSON.stringify(DEFAULT_RUNPLAN)); }
+function saveRunPlan(){ localStorage.setItem(RPKEY, JSON.stringify(RUNPLAN)); }
+let RUNPLAN = loadRunPlan();
+
+function getRunLog(){ try{return JSON.parse(localStorage.getItem(RKEY))||{}}catch(e){return{}} }
+function deleteRun(dk){ var all=getRunLog(); delete all[dk]; localStorage.setItem(RKEY, JSON.stringify(all)); }
+function recentRuns(n){ var all=getRunLog();
+  return Object.keys(all).filter(function(k){return all[k]&&(+all[k].km||+all[k].min);}).sort().reverse().slice(0,n)
+    .map(function(k){var o=all[k]; return {date:k,type:o.type||"Run",km:+o.km||0,min:+o.min||0,feel:o.feel||"",note:o.note||""};}); }
+function pace(km,min){ if(!km||!min)return "—"; var p=min/km, m=Math.floor(p), s=Math.round((p-m)*60); if(s===60){m++;s=0;} return m+":"+String(s).padStart(2,"0")+"/km"; }
+function weekStats(){ var dates=weekDates().map(dateKey), all=getRunLog(), km=0, n=0;
+  dates.forEach(function(d){ if(all[d]&&(+all[d].km||+all[d].min)){ km+=+all[d].km||0; n++; } }); return {km:Math.round(km*10)/10, n:n}; }
+function fmtDate(s){ var p=s.split("-"); return DOW[(new Date(+p[0],+p[1]-1,+p[2])).getDay()]+" "+(+p[2])+"/"+(+p[1]); }
+
+function renderRunning(){
+  var el=document.getElementById("view-running");
+  var dow=today().getDay(), dk=TKEY;
+  var plan=RUNPLAN[dow], done=getRun(dk), hasDone=(+done.km||+done.min), ws=weekStats();
+  var h="";
+
+  h+='<div class="statline"><div class="stat"><div class="v">'+ws.km+'</div><div class="l">km this week</div></div>'
+    +'<div class="stat"><div class="v">'+ws.n+'</div><div class="l">runs this week</div></div></div>';
+
+  h+='<div class="ncard"><h3>🏃 Today’s run <span class="muted">· '+DOW[dow]+'</span></h3>';
+  if(plan){ h+='<div class="muted"><span class="rt">'+esc(plan.type)+'</span>Planned: '+(plan.km?plan.km+' km':'')+(plan.km&&plan.min?' · ':'')+(plan.min?plan.min+' min':'')+(plan.note?' — '+esc(plan.note):'')+'</div>'; }
+  else { h+='<div class="muted">No run planned for today.</div>'; }
+  if(hasDone){ h+='<div class="status ok" style="margin-top:8px">✓ Done: '+(+done.km||0)+' km · '+(+done.min||0)+' min · '+pace(+done.km,+done.min)+(done.feel?' · '+esc(done.feel):'')+'</div>'; }
+
+  h+='<label class="field">Type'+selectHtml("rgType",RUN_TYPES.map(function(t){return [t,t];}),(done.type||(plan&&plan.type)||"Easy"))+'</label>'
+    +'<div class="row2"><label class="field">Distance (km)<input id="rgKm" type="number" inputmode="decimal" step="0.1" value="'+(done.km||(plan&&plan.km)||"")+'"></label>'
+      +'<label class="field">Time (min)<input id="rgMin" type="number" inputmode="numeric" value="'+(done.min||(plan&&plan.min)||"")+'"></label></div>'
+    +'<label class="field">How it felt'+selectHtml("rgFeel",[["","—"],["Great","Great 💪"],["Good","Good 🙂"],["OK","OK 😐"],["Tough","Tough 😮‍💨"]],done.feel||"")+'</label>'
+    +'<label class="field">Note<input id="rgNote" value="'+esc(done.note||"")+'" placeholder="optional"></label>'
+    +'<button class="btn" id="logRun">'+(hasDone?"Update today’s run":"✓ Log run as done")+'</button>'
+    +(hasDone?'<button class="btn sec" id="clearRun">Remove today’s run</button>':'')
+    +'</div>';
+
+  h+='<div class="ncard"><h3>🗓️ Weekly run schedule</h3><div class="muted">Your planned runs — tap edit to change any day.</div>';
+  for(var i=1;i<=7;i++){ var d=i%7, pl=RUNPLAN[d];
+    h+='<div class="runrow'+(d===dow?' today':'')+'"><div class="d">'+DOW[d]+(d===dow?' <small>· today</small>':'')+'</div>'
+      +'<div class="info">'+(pl?('<span class="rt">'+esc(pl.type)+'</span>'+(pl.km?pl.km+' km':'')+(pl.km&&pl.min?' · ':'')+(pl.min?pl.min+' min':'')):'Rest')+'</div></div>';
+  }
+  h+='<div class="toolbar"><button class="miniedit" id="editRunPlan">✏️ Edit running schedule</button></div><div id="runPlanEditor"></div></div>';
+
+  var hist=recentRuns(12);
+  h+='<div class="ncard"><h3>📜 Recent runs</h3>';
+  if(hist.length){ hist.forEach(function(rr){ h+='<div class="hist"><div class="hl">'+fmtDate(rr.date)+'<br><span class="rt">'+esc(rr.type)+'</span></div>'
+    +'<div class="hr">'+rr.km+' km · '+rr.min+' min<br><span class="hl">'+pace(rr.km,rr.min)+(rr.feel?' · '+esc(rr.feel):'')+'</span></div></div>'; }); }
+  else { h+='<div class="muted" style="margin-top:8px">No runs logged yet.</div>'; }
+  h+='</div>';
+
+  el.innerHTML=h;
+  bindRunning(dk);
+}
+
+function bindRunning(dk){
+  var lr=document.getElementById("logRun");
+  if(lr) lr.onclick=function(){
+    var km=+val("rgKm")||0, min=+val("rgMin")||0;
+    if(!km && !min){ alert("Enter distance or time first."); return; }
+    saveRun(dk,{type:val("rgType")||"Easy",km:km,min:min,feel:val("rgFeel"),note:val("rgNote"),done:true});
+    renderRunning(); renderWeek();
   };
-});
+  var cr=document.getElementById("clearRun");
+  if(cr) cr.onclick=function(){ deleteRun(dk); renderRunning(); renderWeek(); };
+  var er=document.getElementById("editRunPlan");
+  if(er) er.onclick=renderRunPlanEditor;
+}
+
+function renderRunPlanEditor(){
+  var wrap=document.getElementById("runPlanEditor"); if(!wrap) return;
+  if(wrap.innerHTML){ wrap.innerHTML=""; return; }
+  var dow=today().getDay();
+  var typeOpts=[["","Rest / none"]].concat(RUN_TYPES.map(function(t){return [t,t];}));
+  var h='<div style="margin-top:10px">';
+  for(var i=1;i<=7;i++){ var d=i%7, pl=RUNPLAN[d]||{};
+    h+='<div class="erow'+(d===dow?' today-row':'')+'"><div class="dlab">'+DOW[d]+'</div><div>'
+      +selectHtml("rp_t_"+d,typeOpts,pl.type||"")
+      +'<div class="sub" style="margin-top:6px">'
+        +'<input id="rp_k_'+d+'" type="number" inputmode="decimal" step="0.1" placeholder="km" value="'+(pl.km||"")+'">'
+        +'<input id="rp_m_'+d+'" type="number" inputmode="numeric" placeholder="min" value="'+(pl.min||"")+'">'
+        +'<input id="rp_n_'+d+'" placeholder="note" value="'+esc(pl.note||"")+'">'
+      +'</div></div></div>';
+  }
+  h+='<button class="btn" id="saveRunPlan">Save running schedule</button></div>';
+  wrap.innerHTML=h;
+  document.getElementById("saveRunPlan").onclick=function(){
+    for(var i=1;i<=7;i++){ var d=i%7, t=val("rp_t_"+d);
+      RUNPLAN[d] = t ? {type:t,km:+val("rp_k_"+d)||0,min:+val("rp_m_"+d)||0,note:val("rp_n_"+d)} : null;
+    }
+    saveRunPlan(); renderRunning(); renderWeek();
+  };
+}
+
+/* ---- workout split editor + summary ---- */
+function renderSplitEditor(){
+  var wrap=document.getElementById("splitEditor"); if(!wrap) return;
+  if(wrap.innerHTML){ wrap.innerHTML=""; return; }
+  var dow=today().getDay();
+  var opts=[["","Rest"]].concat(Object.keys(DAYS).map(function(k){return [k,DAYS[k].title];}));
+  var h='<div class="ncard" style="margin-top:10px">';
+  for(var i=1;i<=7;i++){ var d=i%7;
+    h+='<div class="erow'+(d===dow?' today-row':'')+'"><div class="dlab">'+DOW[d]+'</div><div>'+selectHtml("wm_"+d,opts,WEEKMAP[d]||"")+'</div></div>';
+  }
+  h+='<button class="btn" id="saveSplit">Save weekly split</button></div>';
+  wrap.innerHTML=h;
+  document.getElementById("saveSplit").onclick=function(){
+    for(var i=1;i<=7;i++){ var d=i%7; WEEKMAP[d]=val("wm_"+d); }
+    saveWeekMap();
+    renderToday(); renderWeek(); renderList(); renderSplitSummary();
+    wrap.innerHTML="";
+  };
+}
+function renderSplitSummary(){
+  var el=document.getElementById("splitSummary"); if(!el) return;
+  var parts=[]; for(var i=1;i<=7;i++){ var d=i%7; if(WEEKMAP[d]&&DAYS[WEEKMAP[d]]) parts.push('<span class="pill">'+DOW[d]+' — '+DAYS[WEEKMAP[d]].title+'</span>'); }
+  el.innerHTML='Your split &nbsp;·&nbsp; '+(parts.length?parts.join(" "):'<span class="pill rest">No training days set — tap “Edit weekly split”.</span>');
+}
+
+/* ---- tabs ---- */
+function switchTab(v){
+  document.querySelectorAll(".tab").forEach(function(x){ x.classList.toggle("on", x.getAttribute("data-view")===v); });
+  document.getElementById("view-workout").style.display  = v==="workout"?"":"none";
+  document.getElementById("view-running").style.display  = v==="running"?"":"none";
+  document.getElementById("view-nutrition").style.display= v==="nutrition"?"":"none";
+  if(v==="running") renderRunning();
+  if(v==="nutrition") renderNutrition();
+  window.scrollTo(0,0);
+}
+document.querySelectorAll(".tab").forEach(function(t){ t.onclick=function(){ switchTab(t.getAttribute("data-view")); }; });
+
+/* ---- init ---- */
+document.getElementById("editSplit").onclick=renderSplitEditor;
+renderToday(); renderWeek(); renderList(); renderSplitSummary();
 </script>
 <script>
   if("serviceWorker" in navigator){ window.addEventListener("load",function(){ navigator.serviceWorker.register("sw.js").catch(function(){}); }); }
