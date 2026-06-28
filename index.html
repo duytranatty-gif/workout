@@ -192,6 +192,16 @@
   .stat{flex:1;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;text-align:center}
   .stat .v{font-size:20px;font-weight:800;color:var(--accent)} .stat .l{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:3px}
   .pill.rest{opacity:.5}
+
+  /* meal suggestions */
+  .meal{margin-top:12px}
+  .mealname{font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px}
+  .mitem{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .mitem:last-child{border-bottom:none}
+  .mitem .mi-l b{color:var(--text)}
+  .mitem .mi-r{color:var(--muted);white-space:nowrap}
+  .mtot{margin-top:12px;padding-top:10px;border-top:1px solid var(--line);font-size:13px}
+  .mtot b{color:var(--accent)}
 </style>
 </head>
 <body>
@@ -604,6 +614,7 @@ function resetToday(){
    NUTRITION  ·  targets + food log + AI estimate
 ====================================================================== */
 const PKEY="ubw_profile_v1", FKEY="ubw_food_v1", RKEY="ubw_run_v1", AKEY="ubw_apikey_v1";
+const MSKEY="ubw_mealsug_v1", FPKEY="ubw_foodprefs_v1";
 const AI_MODEL="claude-haiku-4-5-20251001";
 
 function getProfile(){try{return JSON.parse(localStorage.getItem(PKEY))}catch(e){return null}}
@@ -619,6 +630,9 @@ function saveFoods(dk,arr){
 }
 function getRun(dk){try{return (JSON.parse(localStorage.getItem(RKEY))||{})[dk]||{km:0,min:0}}catch(e){return{km:0,min:0}}}
 function saveRun(dk,r){var all={};try{all=JSON.parse(localStorage.getItem(RKEY))||{}}catch(e){}; all[dk]=r; localStorage.setItem(RKEY,JSON.stringify(all));}
+function getMealSug(dk){ try{return (JSON.parse(localStorage.getItem(MSKEY))||{})[dk]||null;}catch(e){return null;} }
+function setMealSug(dk,plan){ var all={}; try{all=JSON.parse(localStorage.getItem(MSKEY))||{};}catch(e){} all[dk]=plan; try{localStorage.setItem(MSKEY,JSON.stringify(all));}catch(e){} }
+function deleteMealSug(dk){ var all={}; try{all=JSON.parse(localStorage.getItem(MSKEY))||{};}catch(e){} delete all[dk]; localStorage.setItem(MSKEY,JSON.stringify(all)); }
 
 const ACT={sed:1.2, light:1.35, mod:1.5, high:1.7};
 const GOAL={
@@ -720,6 +734,16 @@ function renderNutrition(){
     +'<div class="muted">'+runTxt+'</div>'
     +'<button class="btn sec" id="goRunning">Open Running tab to log a run</button></div>';
 
+  /* meal suggestions */
+  var prefs = localStorage.getItem(FPKEY)||"";
+  var plan = getMealSug(dk);
+  h+='<div class="ncard"><h3>🍱 What to eat today</h3>'
+    +'<div class="muted">A practical day of common, easy-to-buy foods that hits your <b>'+t.cal+' kcal</b> / <b>'+t.carbs+'g carb</b> target.</div>'
+    +'<label class="field">Preferences (optional)<input id="mealPrefs" value="'+esc(prefs)+'" placeholder="e.g. no pork, I like rice &amp; chicken, quick options"></label>'
+    +'<button class="btn ai" id="suggestBtn">'+(plan?"✨ Suggest a new plan":"✨ Suggest meals for my target")+'</button>'
+    +'<div class="status" id="sugStatus"></div>'
+    +'<div id="mealPlan">'+mealPlanHtml(plan,t)+'</div></div>';
+
   /* eaten + log */
   h+='<div class="ncard"><h3>📊 Eaten today</h3>'
     +prog("Calories",eaten.cal,t.cal,"kcal")+prog("Carbs",eaten.carb,t.carbs,"g")
@@ -768,6 +792,11 @@ function bindNutrition(dk){
 
   var gr=document.getElementById("goRunning");
   if(gr) gr.onclick=function(){ switchTab("running"); };
+
+  var sb=document.getElementById("suggestBtn"); if(sb) sb.onclick=function(){ suggestMeals(dk); };
+  var addP=document.getElementById("addPlan"); if(addP) addP.onclick=function(){ addPlanToLog(dk); };
+  var clrP=document.getElementById("clearPlan"); if(clrP) clrP.onclick=function(){ deleteMealSug(dk); renderNutrition(); };
+  var mp=document.getElementById("mealPrefs"); if(mp) mp.onchange=function(){ localStorage.setItem(FPKEY, mp.value); };
 
   var pf=document.getElementById("foodPhoto");
   if(pf) pf.onchange=function(){ var file=pf.files[0]; if(!file)return;
@@ -834,6 +863,71 @@ function aiEstimate(photoData){
   })
   .catch(function(e){ st.className="status err"; st.textContent="Error: "+e.message+" (check your key & internet)"; })
   .then(function(){ if(btn)btn.disabled=false; });
+}
+
+/* ---- meal suggestions ---- */
+function mealPlanHtml(plan,t){
+  if(!plan || !plan.meals) return "";
+  var h="";
+  plan.meals.forEach(function(m){
+    h+='<div class="meal"><div class="mealname">'+esc(m.name||"Meal")+'</div>';
+    (m.items||[]).forEach(function(it){
+      h+='<div class="mitem"><div class="mi-l"><b>'+esc(it.qty||"")+'</b> '+esc(it.food||"")+'</div>'
+        +'<div class="mi-r">'+Math.round(it.calories||0)+' kcal</div></div>';
+    });
+    h+='</div>';
+  });
+  var tot=plan.totals||{};
+  h+='<div class="mtot">Plan total: <b>'+Math.round(tot.calories||0)+'</b> kcal · '+Math.round(tot.carbs_g||0)+'g C · '
+    +Math.round(tot.protein_g||0)+'g P · '+Math.round(tot.fat_g||0)+'g F <span class="muted">(target '+t.cal+' kcal / '+t.carbs+'g C)</span></div>';
+  if(plan.note) h+='<div class="muted" style="margin-top:6px">💡 '+esc(plan.note)+'</div>';
+  h+='<button class="btn" id="addPlan">➕ Add this plan to today’s log</button>'
+    +'<button class="btn sec" id="clearPlan">Clear suggestion</button>';
+  return h;
+}
+
+function addPlanToLog(dk){
+  var plan=getMealSug(dk); if(!plan||!plan.meals) return;
+  var arr=getFoods(dk);
+  plan.meals.forEach(function(m){ (m.items||[]).forEach(function(it){
+    arr.push({id:"f"+Date.now()+Math.floor(Math.random()*1e4), name:(it.food||"Food")+(it.qty?" ("+it.qty+")":""), notes:m.name||"", photo:null,
+      kcal:Math.round(it.calories||0), carb:Math.round(it.carbs_g||0), protein:Math.round(it.protein_g||0), fat:Math.round(it.fat_g||0)});
+  }); });
+  saveFoods(dk,arr); renderNutrition();
+}
+
+function suggestMeals(dk){
+  var key=localStorage.getItem(AKEY);
+  var st=document.getElementById("sugStatus");
+  if(!key){ st.className="status err"; st.textContent="Set your Anthropic API key in Settings (below) first."; return; }
+  var t=computeTargets(dk,today().getDay()); if(!t) return;
+  var prefs=val("mealPrefs"); localStorage.setItem(FPKEY,prefs);
+  st.className="status"; st.textContent="✨ Building your meal plan… (needs internet)";
+  var btn=document.getElementById("suggestBtn"); if(btn) btn.disabled=true;
+
+  var prompt='You are a practical diet planner. Build a realistic full-day meal plan that hits these daily targets as closely as possible (aim within 5%): '
+    +'calories='+t.cal+', carbs_g='+t.carbs+', protein_g='+t.protein+', fat_g='+t.fat+'. '
+    +'Use ONLY common foods that are easy to buy at a supermarket or minimart (eggs, bread, rice, oats, banana, apple, milk, yogurt, chicken breast, canned tuna, peanut butter, nuts, cheese, etc.). '
+    +'Use simple countable quantities anyone can measure or count, e.g. "2 bananas", "3 eggs", "1 cup cooked rice", "2 slices bread", "1 can tuna", "200 ml milk", "1 tbsp peanut butter". '
+    +'No obscure ingredients, no complicated recipes. '
+    +(prefs?('Respect these preferences: '+prefs+'. '):'')
+    +'Organise into Breakfast, Lunch, Dinner, and 1-2 Snacks. Make per-item calorie/macro numbers realistic for the stated quantity, and make the totals add up close to the targets. '
+    +'Respond with ONLY this JSON and nothing else: {"meals":[{"name":"Breakfast","items":[{"food":"Banana","qty":"2 medium","calories":210,"carbs_g":54,"protein_g":3,"fat_g":1}]}],"totals":{"calories":0,"carbs_g":0,"protein_g":0,"fat_g":0},"note":"one short practical tip"}';
+
+  fetch("https://api.anthropic.com/v1/messages",{
+    method:"POST",
+    headers:{"content-type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+    body:JSON.stringify({model:AI_MODEL,max_tokens:1500,messages:[{role:"user",content:[{type:"text",text:prompt}]}]})
+  })
+  .then(function(res){return res.json();})
+  .then(function(data){
+    if(data.error) throw new Error(data.error.message||"API error");
+    var txt=(data.content&&data.content[0]&&data.content[0].text)||"";
+    var m=txt.match(/\{[\s\S]*\}/); if(!m) throw new Error("Couldn't read the plan.");
+    var plan=JSON.parse(m[0]);
+    setMealSug(dk,plan); renderNutrition();
+  })
+  .catch(function(e){ st.className="status err"; st.textContent="Error: "+e.message+" (check key & internet)"; if(btn) btn.disabled=false; });
 }
 
 /* ======================================================================
